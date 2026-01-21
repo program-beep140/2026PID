@@ -10,6 +10,7 @@ import frc.robot.commands.ExampleCommand;
 import frc.robot.commands.RunArm;
 import frc.robot.subsystems.ArmSubsystem;
 import frc.robot.subsystems.ExampleSubsystem;
+import frc.robot.subsystems.Turret2Subsystem;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.button.CommandJoystick;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
@@ -24,6 +25,7 @@ import edu.wpi.first.wpilibj2.command.button.Trigger;
 public class RobotContainer {
   // The robot's subsystems and commands are defined here...
     public static ArmSubsystem armSubsystem = new ArmSubsystem();
+    public static Turret2Subsystem turret2Subsystem  = new Turret2Subsystem();
 
   // Replace with CommandPS4Controller or CommandJoystick if needed
   //final CommandJoystick driverJoystick = new CommandJoystick(0);
