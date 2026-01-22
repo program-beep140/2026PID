@@ -36,6 +36,7 @@ public class Turret2Subsystem extends SubsystemBase {
     private static double maxOutput = 0.3;
     private static final double kMaxVelocity = 1.0; // Max velocity in units/sec
     private static final double kMaxAcceleration = 0.5; // Max acceleration in units/sec^2
+    private static final double kTurretGearRatio = 1.00/15.00;// 15 dev of moter is one rev of turret
 
     private SparkMax m_motor = new SparkMax(Constants.TurretConstants.TURRET_MOTOR_ID, MotorType.kBrushless);
     //public SparkAbsoluteEncoder absAngleEncoder = m_motor.getAbsoluteEncoder();
@@ -43,24 +44,25 @@ public class Turret2Subsystem extends SubsystemBase {
     //private SparkMaxConfig m_config = new SparkMaxConfig();
     private SparkMaxConfig m_baseConfig = new SparkMaxConfig();
     private SparkClosedLoopController closedLoopController = m_motor.getClosedLoopController();
-    private RelativeEncoder Encoder;
+    private RelativeEncoder turretEncoder;
     
-    private double angleSetpoint = 5;
+    private double angleSetpoint = 0;
 
     public Turret2Subsystem() 
     {
-        // angleSetpoint = absAngleEncoder.getPosition(); //Gets position in rotations
+        // angleSetpoint = absAngleEncoder.getPosition(); //Gets position in rotations        
 
-        Encoder = m_motor.getEncoder();
-        Encoder.setPosition(angleSetpoint); //update the position on motor encoder
+        turretEncoder = m_motor.getEncoder();
+        turretEncoder.setPosition(angleSetpoint); //update the position on motor encoder
         
         m_baseConfig.closedLoop
                         .p(kP)
                         .i(kI)
                         .d(kD)
                         .feedbackSensor(FeedbackSensor.kPrimaryEncoder)
-                        .outputRange((-1 * maxOutput),maxOutput); // set PID and 1/3 max speeds
+                        .outputRange((-1 * maxOutput),maxOutput); // set PID and 1/3 max speeds                        
         m_baseConfig.idleMode(IdleMode.kBrake);
+        m_baseConfig.encoder.positionConversionFactor(kTurretGearRatio);
 
         //Update the motoro config to use PID
         m_motor.configure(m_baseConfig, ResetMode.kResetSafeParameters, PersistMode.kNoPersistParameters);
@@ -77,7 +79,7 @@ public class Turret2Subsystem extends SubsystemBase {
         SmartDashboard.putNumber("Turret IAccum", 0);
         SmartDashboard.setDefaultBoolean("Turret Stop", false);
 
-        Shuffleboard.getTab("Turret Sysid Testing").addDouble("Turret Relative Angle", Encoder::getPosition);
+        Shuffleboard.getTab("Turret Sysid Testing").addDouble("Turret Relative Angle", turretEncoder::getPosition);
         Shuffleboard.getTab("Turret Sysid Testing").addDouble("Turret Angle ProfileGoal", () -> angleSetpoint);
         Shuffleboard.getTab("Turret Sysid Testing").addDouble("Turret Angle Motor Current", m_motor::getOutputCurrent);        
         Shuffleboard.getTab("Turret Sysid Testing").addDouble("Turret Angle Motor Output", m_motor::getAppliedOutput);
@@ -97,60 +99,88 @@ public class Turret2Subsystem extends SubsystemBase {
     public void stop()
     {
         //set the current
-        double currentAngle = Units.rotationsToDegrees(Encoder.getPosition());
+        double currentAngle = getTurretDegrees(turretEncoder.getPosition());
         closedLoopController.setSetpoint(currentAngle, ControlType.kPosition, ClosedLoopSlot.kSlot0);
         closedLoopController.setIAccum(0);
         //turn off motor
         setAngleMotor(0);
 
         //turn off the control mode
-        SmartDashboard.putBoolean("GO", false);
+        SmartDashboard.putBoolean("Turret GO", false);
+    }
+
+    /**
+     * This will convert the motors rotations into a 360 degree for the turret
+     * @param motorRotations
+     * @return
+     */
+    private double getTurretDegrees(double motorRotations)
+    {
+        //Convert the motor revs using ratio
+        //double adjustedRotations = motorRotations * kTurretGearRatio;
+        //done in the controller now
+        double adjustedRotations = motorRotations;
+
+        return Units.rotationsToDegrees(adjustedRotations);
+    }
+
+    private double getTurretRotations(double turretDegrees)
+    {
+        //get normal rotations from degrees
+        double rotations = Units.degreesToRotations(turretDegrees);
+        //Done in the controller now
+        //rotations = rotations * (1 / kTurretGearRatio);
+        return rotations;
     }
     
 
     public void periodic() 
     {    
-        // Display encoder position and velocity
-        SmartDashboard.putNumber("Actual Position", Encoder.getPosition());
-        SmartDashboard.putNumber("Actual Velocity", Encoder.getVelocity());
-        double currentAngleRot2Degree = Units.rotationsToDegrees(Encoder.getPosition());
-        SmartDashboard.putNumber("Relative Angle rot2deg zero ratio", currentAngleRot2Degree);
-        SmartDashboard.putNumber("IAccum", closedLoopController.getIAccum());
+        double currentMotorRotations = turretEncoder.getPosition();
 
-        if (SmartDashboard.getBoolean("Reset Encoder", false)) {
-            SmartDashboard.putBoolean("Reset Encoder", false);
+        // Display encoder position and velocity
+        SmartDashboard.putNumber("turret Actual Position", currentMotorRotations);
+        SmartDashboard.putNumber("turret Actual Velocity", turretEncoder.getVelocity());
+        double currentAngleRot2Degree = getTurretDegrees(currentMotorRotations);
+        SmartDashboard.putNumber("turret Relative Angle rot2deg", currentAngleRot2Degree);
+        SmartDashboard.putNumber("turret IAccum", closedLoopController.getIAccum());
+
+        if (SmartDashboard.getBoolean("turret Reset Encoder", false)) {
+            SmartDashboard.putBoolean("turret Reset Encoder", false);
             // Reset the encoder position to abs value
-            Encoder.setPosition(Encoder.getPosition());
-            SmartDashboard.putNumber("Target Position",currentAngleRot2Degree);
+            turretEncoder.setPosition(0);
+            SmartDashboard.putNumber("Target Position",0);
         }
-        if (SmartDashboard.getBoolean("Stop", false)) 
+        if (SmartDashboard.getBoolean("Turret Stop", false)) 
         {
-            SmartDashboard.putBoolean("Stop", false);
+            SmartDashboard.putBoolean("Turret Stop", false);
             //Turn off motor
             stop();
         }
-        else if (SmartDashboard.getBoolean("GO", false)) 
+        else if (SmartDashboard.getBoolean("Turret GO", false)) 
         {
-            SmartDashboard.putBoolean("GO", false);
+            SmartDashboard.putBoolean("Turret GO", false);
             /*
             * Get the target position from SmartDashboard and set it as the setpoint
             * for the closed loop controller.
             */
             double targetPosition = SmartDashboard.getNumber("Target Position", 0);
-            if (targetPosition > 3600) {
-                targetPosition = 3600;
+            if (targetPosition > 360) {                
+                targetPosition = 360;
                 SmartDashboard.putNumber("Target Position",targetPosition);
             } else if (targetPosition < 0) {
                 targetPosition = 0;
                 SmartDashboard.putNumber("Target Position",targetPosition);
             }
-            double targetPositionRotations = Units.degreesToRotations(targetPosition);
+            //TODO: get current position in degrees, find how many times around we are, -1,-2, 2, etc
+                
+            double targetPositionRotations = getTurretRotations(targetPosition);
 
             //Read PID values
             // read PID coefficients from SmartDashboard
-            double p = SmartDashboard.getNumber("P Gain", 0);
-            double i = SmartDashboard.getNumber("I Gain", 0);
-            double d = SmartDashboard.getNumber("D Gain", 0);
+            double p = SmartDashboard.getNumber("Turret P Gain", 0);
+            double i = SmartDashboard.getNumber("Turret I Gain", 0);
+            double d = SmartDashboard.getNumber("Turret D Gain", 0);
             
             // if PID coefficients on SmartDashboard have changed, write new values to controller
             boolean updatePID = false;
