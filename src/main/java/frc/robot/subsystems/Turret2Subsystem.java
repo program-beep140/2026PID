@@ -139,14 +139,14 @@ public class Turret2Subsystem extends SubsystemBase {
         double currentMotorRotations = turretEncoder.getPosition();
 
         // Display encoder position and velocity
-        SmartDashboard.putNumber("turret Actual Position", currentMotorRotations);
-        SmartDashboard.putNumber("turret Actual Velocity", turretEncoder.getVelocity());
+        SmartDashboard.putNumber("Turret Actual Position", currentMotorRotations);
+        SmartDashboard.putNumber("Turret Actual Velocity", turretEncoder.getVelocity());
         double currentAngleRot2Degree = getTurretDegrees(currentMotorRotations);
-        SmartDashboard.putNumber("turret Relative Angle rot2deg", currentAngleRot2Degree);
-        SmartDashboard.putNumber("turret IAccum", closedLoopController.getIAccum());
+        SmartDashboard.putNumber("Turret Relative Angle rot2deg", currentAngleRot2Degree);
+        SmartDashboard.putNumber("Turret IAccum", closedLoopController.getIAccum());
 
-        if (SmartDashboard.getBoolean("turret Reset Encoder", false)) {
-            SmartDashboard.putBoolean("turret Reset Encoder", false);
+        if (SmartDashboard.getBoolean("Turret Reset Encoder", false)) {
+            SmartDashboard.putBoolean("Turret Reset Encoder", false);
             // Reset the encoder position to abs value
             turretEncoder.setPosition(0);
             SmartDashboard.putNumber("Target Position",0);
@@ -164,13 +164,13 @@ public class Turret2Subsystem extends SubsystemBase {
             * Get the target position from SmartDashboard and set it as the setpoint
             * for the closed loop controller.
             */
-            double targetPosition = SmartDashboard.getNumber("Target Position", 0);
+            double targetPosition = SmartDashboard.getNumber("Turret Target Position", 0);
             if (targetPosition > 360) {                
                 targetPosition = 360;
-                SmartDashboard.putNumber("Target Position",targetPosition);
+                SmartDashboard.putNumber("Turret Target Position",targetPosition);
             } else if (targetPosition < 0) {
                 targetPosition = 0;
-                SmartDashboard.putNumber("Target Position",targetPosition);
+                SmartDashboard.putNumber("Turret Target Position",targetPosition);
             }
             //TODO: get current position in degrees, find how many times around we are, -1,-2, 2, etc
                 
