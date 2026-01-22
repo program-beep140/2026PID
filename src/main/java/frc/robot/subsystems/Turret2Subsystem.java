@@ -149,7 +149,7 @@ public class Turret2Subsystem extends SubsystemBase {
             SmartDashboard.putBoolean("Turret Reset Encoder", false);
             // Reset the encoder position to abs value
             turretEncoder.setPosition(0);
-            SmartDashboard.putNumber("Target Position",0);
+            SmartDashboard.putNumber("Turret Target Position",0);
         }
         if (SmartDashboard.getBoolean("Turret Stop", false)) 
         {
